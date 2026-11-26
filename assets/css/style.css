@@ -3038,6 +3038,18 @@ a {
     font-weight: 600;
 }
 
+.post-avatar,
+.people-card .person-row .avatar,
+.mini-profile .avatar,
+.mention {
+    cursor: pointer;
+}
+
+.post-avatar:hover,
+.people-card .person-row .avatar:hover {
+    opacity: 0.85;
+}
+
 .mention-menu {
     position: fixed;
     z-index: 1000;

@@ -763,6 +763,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const usersCollection = collection(db, "users");
 
     let currentAccount = accounts["7sVo7y23TPU97iKV93ht2MlHE413"];
+    // Which profile the Profile page is showing (null = your own)
+    let viewedProfileId = null;
+
+    function getViewedAccount() {
+        return accounts[viewedProfileId] || currentAccount;
+    }
     function getAccountById(accountId) {
         return accounts[accountId] || null;
     }
@@ -1021,6 +1027,7 @@ document.addEventListener("DOMContentLoaded", () => {
         unsubscribers.forEach(unsubscribe => unsubscribe());
         unsubscribers = [];
         listenersOwnerUid = null;
+        viewedProfileId = null;
 
         firestorePosts = [];
         likesByPost.clear();
@@ -1076,33 +1083,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         currentAccount = account;
-        // Update the Profile page
-        const profileAvatar = document.getElementById("profileAvatar");
-        const profileDisplayName = document.getElementById("profileDisplayName");
-        const profileUsername = document.getElementById("profileUsername");
-        const profileBio = document.getElementById("profileBio");
-
-        if (profileAvatar) {
-            profileAvatar.className = `profile-avatar avatar ${account.avatarClass}`;
-            updateAvatarImage(profileAvatar, account);
-        }
-
-        if (profileDisplayName) {
-            profileDisplayName.textContent = account.name;
-        }
-
-        if (profileUsername) {
-            profileUsername.textContent = `@${account.username}`;
-        }
-
-        if (profileBio) {
-            profileBio.textContent = account.bio;
-        }
-
-        const profileCover = document.querySelector(".profile-cover");
-        if (profileCover) {
-            updateCoverImage(profileCover, account);
-        }
+        renderProfileHeader();
         localStorage.setItem("ols-account", id);
         html.dataset.account = id;
 
@@ -1172,6 +1153,29 @@ document.addEventListener("DOMContentLoaded", () => {
         document.dispatchEvent(new CustomEvent("accountchange", {
             detail: currentAccount
         }));
+    }
+
+    function renderProfileHeader() {
+        const account = getViewedAccount();
+        const isOwn = account.id === currentAccount.id;
+        const profileAvatar = document.getElementById("profileAvatar");
+        const profileDisplayName = document.getElementById("profileDisplayName");
+        const profileUsername = document.getElementById("profileUsername");
+        const profileBio = document.getElementById("profileBio");
+        const profileCover = document.querySelector(".profile-cover");
+
+        if (profileAvatar) {
+            profileAvatar.className = `profile-avatar avatar ${account.avatarClass}`;
+            updateAvatarImage(profileAvatar, account);
+        }
+        if (profileDisplayName) profileDisplayName.textContent = account.name;
+        if (profileUsername) profileUsername.textContent = `@${account.username}`;
+        if (profileBio) profileBio.textContent = account.bio;
+        if (profileCover) {
+            updateCoverImage(profileCover, account);
+        }
+        const editButton = document.querySelector(".profile-edit-button");
+        if (editButton) editButton.style.display = isOwn ? "" : "none";
     }
 
     // Writes are authorized by the signed-in UID, so only that account may be selected.
@@ -1263,6 +1267,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function showProfile(accountId) {
+        if (!accounts[accountId]) return;
+
+        viewedProfileId = accountId;
+        renderProfileHeader();
+        renderProfilePosts();
+        renderProfileReplies();
+        renderProfileLikes();
+
+        document.querySelector('[data-profile-tab="posts"]')?.click();
+        navigateTo("profile");
+
+        const viewed = getViewedAccount();
+        if (viewed.id !== currentAccount.id) {
+            document.getElementById("pageTitle").textContent = viewed.name;
+            document.getElementById("pageSubtitle").textContent =
+                `${viewed.name}'s little corner.`;
+            document.querySelectorAll('[data-page="profile"]').forEach(link => {
+                link.classList.remove("active");
+            });
+        }
+    }
 
     document.querySelectorAll("[data-page]").forEach(link => {
 
@@ -1270,10 +1296,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
             event.preventDefault();
 
-            navigateTo(link.dataset.page);
+            if (link.dataset.page === "profile") {
+                showProfile(currentAccount.id);
+            } else {
+                navigateTo(link.dataset.page);
+            }
 
         });
 
+    });
+
+    document.addEventListener("click", event => {
+        const target = event.target instanceof Element
+            ? event.target.closest(
+                ".post-avatar, .people-card .person-row .avatar, .mini-profile .avatar, .mention"
+            )
+            : null;
+        if (!target) return;
+
+        let accountId;
+
+        if (target.classList.contains("post-avatar")) {
+            accountId = target.closest(".post-card")?.dataset.authorId;
+        } else if (target.classList.contains("mention")) {
+            accountId = target.dataset.mentionId;
+        } else if (target.closest(".person-row")) {
+            accountId = target.closest(".person-row").dataset.account;
+        } else {
+            accountId = currentAccount.id;
+        }
+
+        if (accountId && accounts[accountId]) showProfile(accountId);
     });
 
 
@@ -1647,9 +1700,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Posts / Replies / Likes numbers on the profile page
     function renderProfileStats() {
+        const viewed = getViewedAccount();
         const seen = new Set();
         const posts = firestorePosts.filter(
-            post => post.authorId === currentAccount.id
+            post => post.authorId === viewed.id
         ).length;
 
         let likes = 0;
@@ -1659,11 +1713,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!id || seen.has(id)) return;
             seen.add(id);
 
-            if (likesByPost.get(id)?.has(currentAccount.id)) likes++;
+            if (likesByPost.get(id)?.has(viewed.id)) likes++;
         });
 
         const replies = Array.from(commentsById.values())
-            .filter(comment => comment.authorId === currentAccount.id).length;
+            .filter(comment => comment.authorId === viewed.id).length;
 
         const setStat = (name, value) => {
             document.querySelectorAll(`[data-stat="${name}"]`).forEach(element => {
@@ -1679,6 +1733,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderProfilePosts() {
 
         renderProfileStats();
+        const viewed = getViewedAccount();
 
         const profilePosts = document.querySelector(
             '[data-profile-panel="posts"]'
@@ -1690,7 +1745,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const ownPosts = Array.from(
             timeline.querySelectorAll(".post-card")
-        ).filter(post => post.dataset.authorId === currentAccount.id);
+        ).filter(post => post.dataset.authorId === viewed.id);
 
         if (ownPosts.length === 0) {
             profilePosts.innerHTML = `
@@ -1720,6 +1775,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderProfileReplies() {
 
         renderProfileStats();
+        const viewed = getViewedAccount();
 
         const repliesPanel = document.querySelector(
             '[data-profile-panel="replies"]'
@@ -1731,7 +1787,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const ownReplies = Array.from(commentsById.values())
             .filter(comment =>
-                comment.authorId === currentAccount.id &&
+                comment.authorId === viewed.id &&
                 getPost(comment.postId)
             )
             .reverse();
@@ -1765,7 +1821,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const context = document.createElement("p");
             context.className = "profile-reply-context";
             context.textContent =
-                `${currentAccount.name} replied to ${accounts[originalAuthorId]?.name || "a post"}`;
+                `${viewed.name} replied to ${accounts[originalAuthorId]?.name || "a post"}`;
 
             const originalText = document.createElement("p");
             originalText.className = "profile-reply-original";
@@ -1773,7 +1829,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const replyAuthor = document.createElement("strong");
             replyAuthor.className = "profile-reply-author";
-            replyAuthor.textContent = currentAccount.name;
+            replyAuthor.textContent = viewed.name;
 
             const replyText = document.createElement("p");
             replyText.className = "profile-reply-text";
@@ -1794,6 +1850,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderProfileLikes() {
 
         renderProfileStats();
+        const viewed = getViewedAccount();
 
         const likesPanel = document.querySelector(
             '[data-profile-panel="likes"]'
@@ -1807,7 +1864,7 @@ document.addEventListener("DOMContentLoaded", () => {
             timeline.querySelectorAll(".post-card")
         ).filter(post => {
             const likers = likesByPost.get(post.dataset.postId);
-            return likers?.has(currentAccount.id);
+            return likers?.has(viewed.id);
         });
 
         if (likedPosts.length === 0) {
