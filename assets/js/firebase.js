@@ -22,9 +22,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 const authReady = setPersistence(auth, browserLocalPersistence)
-    .then(() => {
-        console.log("Login persistence enabled!");
-    })
     .catch((error) => {
         console.error("Login persistence error:", error);
         throw error;
@@ -32,5 +29,3 @@ const authReady = setPersistence(auth, browserLocalPersistence)
 const db = getFirestore(app);
 
 export { app, auth, db, authReady };
-
-console.log("Our Little Space connected to Firebase!");

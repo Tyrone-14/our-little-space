@@ -141,7 +141,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     authReady.then(() => {
         onAuthStateChanged(auth, async (user) => {
-            console.log("Currently authenticated UID:", user?.uid);
             if (user) {
                 const account = accounts[user.uid];
 
@@ -3207,3 +3206,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 });
+
+// Register Progressive Web App service worker
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+            .catch(error => {
+                console.error("Service worker registration failed:", error);
+            });
+    });
+}

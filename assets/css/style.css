@@ -125,8 +125,11 @@ textarea:focus-visible {
     border-radius: 13px;
 }
 
-.brand-icon svg {
-    width: 20px;
+.brand-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
 }
 
 .brand-name {
@@ -2863,6 +2866,13 @@ a {
     background: #f4e6ef;
     color: #a34d7c;
     font-size: 30px;
+}
+
+.auth-brand-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
 }
 
 .auth-brand h1 {
