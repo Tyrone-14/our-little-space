@@ -2941,23 +2941,6 @@ a {
     background: #91436d;
 }
 
-.auth-switch-text {
-    margin: 24px 0 0;
-    text-align: center;
-    color: var(--text-secondary, #897b87);
-    font-size: 13px;
-}
-
-#authModeToggle {
-    padding: 0;
-    border: none;
-    background: none;
-    color: #a65380;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-}
-
 .auth-error {
     margin: 14px 0 0;
     color: #c0445c;

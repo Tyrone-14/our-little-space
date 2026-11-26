@@ -1,7 +1,6 @@
 import { auth, db, authReady } from "./firebase.js";
 
 import {
-    createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     onAuthStateChanged,
     signOut
@@ -51,45 +50,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const authPassword = document.getElementById("authPassword");
     const authError = document.getElementById("authError");
     const authSubmit = document.getElementById("authSubmit");
-    const authTitle = document.getElementById("authTitle");
-    const authSubtitle = document.getElementById("authSubtitle");
-    const authModeToggle = document.getElementById("authModeToggle");
-    const authSwitchPrompt = document.getElementById("authSwitchPrompt");
 
     const appLayout = document.querySelector(".app-layout");
 
-    let authMode = "login";
     // =================================
-    // SWITCH LOGIN / SIGN-UP MODE
-    // =================================
-
-    authModeToggle.addEventListener("click", () => {
-        authMode = authMode === "login" ? "signup" : "login";
-
-        authTitle.textContent =
-            authMode === "login" ? "Welcome back" : "Create your account";
-
-        authSubtitle.textContent =
-            authMode === "login"
-                ? "Sign in to your little space."
-                : "Create an account for your little space.";
-
-        authSubmit.textContent =
-            authMode === "login" ? "Sign in" : "Create account";
-
-        authSwitchPrompt.textContent =
-            authMode === "login" ? "New here?" : "Already have an account?";
-
-        authModeToggle.textContent =
-            authMode === "login" ? "Create an account" : "Sign in";
-
-        authPassword.autocomplete =
-            authMode === "login" ? "current-password" : "new-password";
-
-        authError.hidden = true;
-    });
-    // =================================
-    // HANDLE LOGIN / SIGN-UP
+    // HANDLE LOGIN
     // =================================
 
     authForm.addEventListener("submit", async (event) => {
@@ -103,11 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
         authSubmit.textContent = "Please wait...";
 
         try {
-            if (authMode === "signup") {
-                await createUserWithEmailAndPassword(auth, email, password);
-            } else {
-                await signInWithEmailAndPassword(auth, email, password);
-            }
+            await signInWithEmailAndPassword(auth, email, password);
 
             authForm.reset();
 
@@ -131,8 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } finally {
             authSubmit.disabled = false;
-            authSubmit.textContent =
-                authMode === "login" ? "Sign in" : "Create account";
+            authSubmit.textContent = "Sign in";
         }
     });
     // =================================
